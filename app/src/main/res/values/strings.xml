@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">Lilly</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="contraindicationsDetail_tv">in patients who are hypersensitive to this drug or to any ingredient in the formulation, including any nonmedicinal ingredient, or component of the container (for a complete listing, see 6 DOSAGE FORMS,
+STRENGTHS, COMPOSITION AND PACKAGING).</string>
+    <string name="warningTv">RISK OF THYROID C-CELL TUMORS</string>
+</resources>
