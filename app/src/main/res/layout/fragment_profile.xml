@@ -71,5 +71,14 @@
 
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
+    <ImageButton
+        android:id="@+id/IBLogout"
+        android:layout_width="61dp"
+        android:layout_height="43dp"
+        android:src="@drawable/ic_baseline_exit_to_app_24"
+        app:layout_constraintBottom_toTopOf="@+id/swipeContainer"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/tvUsername" />
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>

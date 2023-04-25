@@ -37,6 +37,11 @@ import com.example.lilly.R;
 import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvException;
 
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -46,6 +51,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 public class HomeFragment extends Fragment {
     private ImageView micIV;
@@ -60,17 +73,20 @@ public class HomeFragment extends Fragment {
     private Intent speechIntent;
     AlertDialog.Builder alertSpeechDialog;
     AlertDialog alertDialog;
+    public static final MediaType JSON
+            = MediaType.get("application/json; charset=utf-8");
+
+    OkHttpClient client = new OkHttpClient();
 
     public HomeFragment() {
-        // Required empty public constructor
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        //return inflater.inflate(R.layout.fragment_home, container, false);
         View view = inflater.inflate(R.layout.fragment_home, container, false);
+
         if(ContextCompat.checkSelfPermission(getContext(), Manifest.permission.RECORD_AUDIO)!= PackageManager.PERMISSION_GRANTED){
             ActivityCompat.requestPermissions((Activity) getContext(), permissions, REQUEST_RECORD_AUDIO_PERMISSION);
         }
@@ -80,7 +96,8 @@ public class HomeFragment extends Fragment {
         enterButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                classifyParagraph();
+                String question = symptomsInput.getText().toString().toLowerCase();
+                callAPI(question);
             }
         });
 
@@ -121,12 +138,6 @@ public class HomeFragment extends Fragment {
 
             @Override
             public void onResults(Bundle bundle) {
-//                micIV.setImageResource(R.drawable.ic_baseline_mic_24);
-//                ArrayList<String> arrayList = bundle.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
-//                symptomsInput.setText(arrayList.get(0));
-//                alertDialog.dismiss();
-//                Log.e("result", arrayList.get(0));
-//            }
                 ArrayList<String> results = bundle.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
                 if (results != null) {
                     String recognizedText = results.get(0);
@@ -174,13 +185,59 @@ public class HomeFragment extends Fragment {
         return view;
     }
 
-    private void classifyParagraph() {
+    public void callAPI(String question) {
+        JSONObject jsonBody = new JSONObject();
+        try {
+            jsonBody.put("model", "text-davinci-003");
+//            jsonBody.put("messages": [{"role": "user", "content": "Hello!"}]);
+            jsonBody.put("prompt",  "What is the likely diagnosis if I am feeling the following way? "+ question);
+            jsonBody.put("max_tokens", 4000);
+            jsonBody.put("temperature", 0);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        RequestBody body = RequestBody.create(jsonBody.toString(), JSON);
+        Request request = new Request.Builder()
+                .url("https://api.openai.com/v1/completions")
+                .header("Authorization", getString(R.string.key))
+                .post(body)
+                .build();
+
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
+
+            }
+
+            @Override
+            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
+                if(response.isSuccessful()){
+                    JSONObject jsonObject = null;
+                    try {
+                        jsonObject = new JSONObject(response.body().string());
+                        JSONArray jsonArray = jsonObject.getJSONArray("choices");
+                        String output = jsonArray.getJSONObject(0).getString("text");
+                        Log.i("ChatGPTData", output);
+                        classifyParagraph(output.trim());
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+
+                } else {
+                    classifyParagraph("Failed to load"+ response.body().string());
+                }
+            }
+        });
+    }
+
+    public void classifyParagraph(String output) {
         Map<String, Integer> wordCategories = readCsv();
         String input = symptomsInput.getText().toString().toLowerCase(); // convert the input to lowercase
         String[] keywords = wordCategories.keySet().toArray(new String[0]); // get the keywords from the wordCategories map
         StringBuilder result = new StringBuilder();
         boolean keywordFound = false; // keep track if at least one keyword was found
         result.append("Symptom: ").append(input);
+        result.append("\n");
         for (String keyword : keywords) {
             if (input.contains(keyword.toLowerCase())) { // check if the keyword is in the input
                 keywordFound = true;
@@ -192,6 +249,7 @@ public class HomeFragment extends Fragment {
         if (!keywordFound) { // if no keyword was found, ask for more info
             result.append("\nClassification: General or no keyword found in the input. Please provide more information.");
         }
+        result.append("\nSuggestion: ").append(output);
         String resultString = result.toString();
 // Create a bundle and add the result to it
         Bundle bundle = new Bundle();
@@ -208,7 +266,7 @@ public class HomeFragment extends Fragment {
         Map<String, Integer> wordCategories = new HashMap<>();
         try {
             Resources res = getResources();
-            InputStream in_s = res.openRawResource(R.raw.medical);
+            InputStream in_s = res.openRawResource(R.raw.lilly);
             byte[] b = new byte[in_s.available()];
             in_s.read(b);
             CSVReader reader = new CSVReader(new StringReader(new String(b)));
@@ -294,4 +352,5 @@ public class HomeFragment extends Fragment {
             }
         }
     }
+
 }

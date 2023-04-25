@@ -50,5 +50,10 @@ dependencies {
     implementation 'com.opencsv:opencsv:5.5.2'
     implementation 'org.apache.commons:commons-lang3:3.12.0'
     implementation 'com.github.parse-community.Parse-SDK-Android:parse:1.25.0'
+    //implementation 'ai.openai:openai-java:0.10.1'
+    //implementation 'com.openai:chat-gpt:1.0.0'
+    //implementation 'ai.api:sdk:<2.0.7>'
+    //implementation 'ai.api:libai:<2.0.7>'
+    implementation("com.squareup.okhttp3:okhttp:4.10.0")
     //implementation 'com.parse:parseui-login-android:0.0.2'
 }
